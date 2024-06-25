@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Arial', sans-serif;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #333;
+        }
+
+        .major-categories {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .major-categories li {
+            list-style: none;
+        }
+
+        .major-categories button {
+            font-size: 1.25rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .major-categories button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .major-categories a {
+            font-size: 1.25rem;
+            padding: 0.5rem 1rem;
+            margin-right: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .major-categories a:hover {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        .modal-header {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .modal-body ul {
+            padding-left: 0;
+        }
+
+        .modal-body li {
+            list-style: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-body button {
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            transition: color 0.3s ease;
+            background: none;
+            border: none;
+            color: #007bff;
+        }
+
+        .modal-body button:hover {
+            color: #0056b3;
+        }
+
+        .modal-footer button {
+            font-size: 1rem;
+        }
+
+        .check-service {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert {
+            margin-top: 1rem;
+            font-size: 1rem;
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container mt-5">
+        <h1>Welcome to Our Website!</h1>
+
+        <div class="mb-4">
+            <h3>Major Categories:</h3>
+            <ul class="major-categories">
+                {% for category in major_categories %}
+                    <li>
+                        <button type="button" class="btn btn-primary btn-sm"
+                                data-toggle="modal" data-target="#subcategoryModal"
+                                data-mc-name="{{ category.mc_name }}"
+                                data-subcategories='{{ category.subcategories | tojson }}'>
+                            {{ category.mc_name }}
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="mb-4 check-service">
+            <h3>Check Service Availability:</h3>
+            <form id="cityForm" method="POST" action="{{ url_for('check_city') }}">
+                <div class="form-group">
+                    <label for="cityName">Enter your city name:</label>
+                    <input type="text" class="form-control" id="cityName" name="cityName" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            {% if city_message %}
+                <div class="alert alert-info mt-3">{{ city_message }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="subcategoryModal" tabindex="-1" role="dialog" aria-labelledby="subcategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subcategoryModalLabel">Subcategories</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <ul id="subcategoryList" class="list-group">
+                        <!-- Subcategories will be appended here -->
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showSubcategories(mcName, subcategories) {
+            // Set the modal title to the major category name
+            document.getElementById('subcategoryModalLabel').innerText = mcName;
+
+            // Get the subcategory list container
+            const subcategoryList = document.getElementById('subcategoryList');
+
+            // Clear any existing subcategories
+            subcategoryList.innerHTML = '';
+
+            // Check if subcategories is an array
+            if (Array.isArray(subcategories)) {
+                // Append each subcategory to the list
+                subcategories.forEach(subcategory => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerHTML = `<button type="button" class="btn btn-link" onclick="redirectToSubcategory(${subcategory.sc_id})">${subcategory.sc_name}</button>`;
+                    subcategoryList.appendChild(li);
+                });
+            } else {
+                // Handle case where subcategories is not an array
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = 'No subcategories found';
+                subcategoryList.appendChild(li);
+            }
+        }
+
+        function redirectToSubcategory(subcategoryId) {
+            window.location.href = '/subcategory/' + subcategoryId;
+        }
+
+        // Attach event listener to the modal
+        $('#subcategoryModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var mcName = button.data('mc-name'); // Extract info from data-* attributes
+            var subcategories = button.data('subcategories'); // JSON object
+
+            // Call the function to update the modal's content
+            showSubcategories(mcName, subcategories);
+        });
+    </script>
+</body>
+</html>
