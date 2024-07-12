@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Bill</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="container mt-4">
+        <h2>Booking Details</h2>
+        <table class="table table-bordered">
+            <tr><th>Booking ID</th><td>{{ booking['booking_id'] }}</td></tr>
+            <tr><th>User Email</th><td>{{ booking['user_email'] }}</td></tr>
+            <tr><th>Booked Location</th><td>{{ booking['booked_location'] }}</td></tr>
+            <tr><th>Phone Number</th><td>{{ booking['phone_no'] }}</td></tr>
+            <tr><th>Booking Date & Time</th><td>{{ booking['booking_date_time'] }}</td></tr>
+            <tr><th>Booked Date</th><td>{{ booking['booked_date'] }}</td></tr>
+            <tr><th>Booked Time</th><td>{{ booking['booked_time'] }}</td></tr>
+            <tr><th>UPI Reference Number</th><td>{{ booking['UPI_Ref_No'] }}</td></tr>
+            <tr><th>Total Duration</th><td>{{ booking['duration'] }}</td></tr>
+            <tr><th>Total Amount</th><td>{{ booking['total_amount'] }}</td></tr>
+            <tr><th>Offer Name</th><td>{{ booking['offer_name'] }}</td></tr>
+            <tr><th>Discounted Total</th><td>{{ booking['discounted_total'] }}</td></tr>
+            <tr><th>Credits Used</th><td>{{ booking['credits_used'] }}</td></tr>
+            <tr><th>Final Amount</th><td>{{ booking['final_amount'] }}</td></tr>
+            <tr><th>Total Minutes</th><td>{{ booking['total_minutes'] }}</td></tr>
+            <tr><th>Technician Name</th><td>{{ booking['tech_name'] }}</td></tr>
+            <tr><th>Technician Phone Number</th><td>{{ booking['tech_phone'] }}</td></tr>
+            <tr><th>Technician Phone Email</th><td>{{ booking['tech_email'] }}</td></tr>
+        </table>
+
+        <h2>Booked Services</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Service Name</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Duration</th>
+                    <th>Warranty Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for service in services %}
+                <tr>
+                    <td>{{ service['service_name'] }}</td>
+                    <td>{{ service['price'] }}</td>
+                    <td>{{ service['quantity'] }}</td>
+                    <td>{{ service['total'] }}</td>
+                    <td>{{ service['duration'] }}</td>
+                    <td>{{ service['warranty_duration'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>SERVICE STATUS</h2>
+        <table class="table table-bordered">
+            <tr><th>Status</th><td>{{ booking['booking_status'] }}</td></tr>
+        </table>
+    </div>
+</body>
+</html>

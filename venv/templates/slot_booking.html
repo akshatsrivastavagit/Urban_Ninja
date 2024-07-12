@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Booking</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <h2>Selected Services:</h2>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Service Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Duration</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service in selected_services['services'] %}
+                        <tr>
+                            <td>{{ service['name'] }}</td>
+                            <td>{{ service['price'] }}</td>
+                            <td>{{ service['quantity'] }}</td>
+                            <td>{{ service['duration'] }} minutes</td>
+                            <td>{{ service['total'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4"><strong>Total Amount:</strong></td>
+                            <td>{{ selected_services['total_amount'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Total Duration:</strong></td>
+                            <td>{{ selected_services['total_duration'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Offer Name:</strong></td>
+                            <td>{{ selected_services['offer_name'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Offer Discount:</strong></td>
+                            <td>{{ selected_services['offer_discount'] }}%</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Discount Amount:</strong></td>
+                            <td>{{ selected_services['discount_amt'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Discounted Total:</strong></td>
+                            <td>{{ selected_services['discounted_total'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Credits Used:</strong></td>
+                            <td>{{ selected_services['credits_used'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Final Amount:</strong></td>
+                            <td>{{ selected_services['final_amount'] }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h3>Check Service Availability:</h3>
+                <form id="cityForm" method="POST" action="{{ url_for('check_city') }}" onsubmit="return validateForm()">
+                    <div class="form-group">
+                        <label for="cityName">Enter your city name:</label>
+                        <input type="text" class="form-control" id="cityName" name="cityName" value="{{ session.get('city_name', '') }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phoneNumber">Enter your phone number:</label>
+                        <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" value="{{ session.get('phone_number', '') }}" required>
+                        <small id="phoneHelp" class="form-text text-muted">Please enter a 10-digit phone number.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+                {% if session.city_message %}
+                    <div class="alert alert-info mt-3">{{ session.city_message }}</div>
+                {% endif %}
+                
+                <!-- Available Slots Section -->
+                <h3 class="mt-4">Available Slots:</h3>
+                <form id="slotForm" method="post">
+                    
+                    <div class="form-group">
+                        <label for="slot_date">Choose a Date:</label>
+                        <select name="slot_date" id="slot_date">
+                            {% if available_slots %}
+                                {% for date, slots in available_slots.items() %}
+                                    <option value="{{ date }}">{{ date }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No available dates</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="slot_time">Choose a Time:</label>
+                        <select name="slot_time" id="slot_time">
+                            <!-- Times will be dynamically populated based on the selected date -->
+                        </select>
+                    </div>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Bootstrap JS and dependencies (jQuery, Popper.js) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js" integrity="sha384-TzFuhjSb/Y4Gj2+xrRcoS7mKfYjTXsWfDUp1ibU09sz7p/MmLCX1yWCxJzQd9JAT" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-5A0hP1V0ODwKdeveVszWMob450VZxX7J0oKRrGARn5B+6q50akxF5EtFzSt5E7x" crossorigin="anonymous"></script>
+    <script>
+        function validateForm() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const phonePattern = /^\d{10}$/;
+            if (!phonePattern.test(phoneNumber)) {
+                alert('Please enter a valid 10-digit phone number.');
+                return false;
+            }
+            return true;
+        }
+
+        // Function to fetch and display available slots
+        async function fetchAvailableSlots(sc_id, duration) {
+            const cityName = document.getElementById('cityName').value;
+            if (!cityName) {
+                alert('Please enter your city name.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/availability/${sc_id}/${duration}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cityName })
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    document.getElementById('availableSlots').innerHTML = `<div class="alert alert-danger">${result.error}</div>`;
+                    return;
+                }
+
+                const [technicianId, slots] = result;
+                let slotsHtml = '<div class="list-group">';
+                for (const [date, timeSlots] of Object.entries(slots)) {
+                    slotsHtml += `<h5 class="mt-3">${date}</h5>`;
+                    timeSlots.forEach(slot => {
+                        slotsHtml += `<button type="button" class="list-group-item list-group-item-action">${slot}</button>`;
+                    });
+                }
+                slotsHtml += '</div>';
+
+                document.getElementById('availableSlots').innerHTML = slotsHtml;
+            } catch (error) {
+                console.error('Error fetching available slots:', error);
+                document.getElementById('availableSlots').innerHTML = `<div class="alert alert-danger">Error fetching available slots</div>`;
+            }
+        }
+
+        // Modify the form submission to fetch available slots
+        document.getElementById('cityForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const sc_id = 1; // Replace with the actual service category ID
+            const duration = 60; // Replace with the actual service duration
+            fetchAvailableSlots(sc_id, duration);
+        });
+        const slotDateSelect = document.getElementById('slot_date');
+        const slotTimeSelect = document.getElementById('slot_time');
+    </script>
+</body>
+</html>

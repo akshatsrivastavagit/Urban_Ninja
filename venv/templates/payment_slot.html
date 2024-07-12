@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Booking</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <h2>Selected Services:</h2>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Service Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Duration</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service in selected_services['services'] %}
+                        <tr>
+                            <td>{{ service['name'] }}</td>
+                            <td>{{ service['price'] }}</td>
+                            <td>{{ service['quantity'] }}</td>
+                            <td>{{ service['duration'] }} minutes</td>
+                            <td>{{ service['total'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4"><strong>Address:</strong></td>
+                            <td>{{ selected_services['address'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Slot Date:</strong></td>
+                            <td>{{ selected_services['slotdate'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Slot Time:</strong></td>
+                            <td>{{ selected_services['slottime'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Phone number:</strong></td>
+                            <td>{{ selected_services['phone'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Total Amount:</strong></td>
+                            <td>{{ selected_services['total_amount'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Total Duration:</strong></td>
+                            <td>{{ selected_services['total_duration'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Offer Name:</strong></td>
+                            <td>{{ selected_services['offer_name'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Offer Discount:</strong></td>
+                            <td>{{ selected_services['offer_discount'] }}%</></td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Discount Amount:</strong></td>
+                            <td>{{ selected_services['discount_amt'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Discounted Total:</strong></td>
+                            <td>{{ selected_services['discounted_total'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Credits Used:</strong></td>
+                            <td>{{ selected_services['credits_used'] }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Final Amount:</strong></td>
+                            <td>{{ selected_services['final_amount'] }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <form id="addressForm" method="post" action="/payment_slot_booking/{{ session.get('sc_id','') }}">
+                    <input type="hidden" name="purpose" value="addressDetails">
+                    <div class="form-group">
+                        <label for="cityName">Enter your address:</label>
+                        <input type="text" class="form-control" id="cityName" name="address"  required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phoneNumber">Enter your phone number:</label>
+                        <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" required>
+                        <small id="phoneHelp" class="form-text text-muted">Please enter a 10-digit phone number.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Address</button>
+                </form>
+                <form id="slotForm" method="post" action="/payment_slot_booking/{{ session.get('sc_id') }}">
+                    <input type="hidden" name="purpose" value="slotBooking">
+                    <div class="form-group">
+                        <h1>Select a Slot</h1>
+                        <label for="slot_date">Choose a Date:</label>
+                        <select name="slot_date" id="slot_date">
+                            {% if available_slots %}
+                                {% for date, slots in available_slots.items() %}
+                                    <option value="{{ date }}">{{ date }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">We do not provide service at this location</option>
+                            {% endif %}
+                        </select>
+                        
+                        <label for="slot_time">Choose a Time:</label>
+                        <select name="slot_time" id="slot_time">
+                            <!-- Times will be dynamically populated based on the selected date -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Book Slot</button>
+                </form>
+                
+                <form id="paymentForm" method="post" action="/create_order">
+                    <input type="hidden" name="purpose" value="payment">
+                    <button type="button" class="btn btn-primary" onclick="handlePayment()">Pay Now</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function validateForm() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const phonePattern = /^\d{10}$/;
+            if (!phonePattern.test(phoneNumber)) {
+                alert('Please enter a valid 10-digit phone number.');
+                return false;
+            }
+            return true;
+        }
+
+        const availableSlots = {{ available_slots|tojson }};
+        const slotDateSelect = document.getElementById('slot_date');
+        const slotTimeSelect = document.getElementById('slot_time');
+
+        function populateTimes() {
+            const selectedDate = slotDateSelect.value;
+            const times = availableSlots[selectedDate] || [];
+            slotTimeSelect.innerHTML = '';
+            times.forEach(time => {
+                const option = document.createElement('option');
+                option.value = time;
+                option.textContent = time;
+                slotTimeSelect.appendChild(option);
+            });
+        }
+
+        slotDateSelect.addEventListener('change', populateTimes);
+        window.addEventListener('load', populateTimes);
+
+        function handlePayment() {
+            const finalAmount = {{ selected_services['final_amount'] }};
+            
+            if (finalAmount === 0) {
+                fetch('/confirm_booking', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({upi_ref_no: 'free_transaction'})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Booking confirmed:', data);
+                    window.location.href = '/bill/' + data.booking_id;
+                })
+                .catch(error => {
+                    console.error('Error confirming booking:', error);
+                });
+            } else {
+                startPayment();
+            }
+        }
+
+        function startPayment() {
+            const amount = {{ selected_services['final_amount'] }} * 100; // Convert to paisa
+            console.log(amount)
+            const options = {
+                "key": "rzp_test_4uhlcB7rKgemAg", // Enter the Key ID generated from the Dashboard
+                "amount": amount,
+                "currency": "INR",
+                "name": "Your Company Name",
+                "description": "Payment for services",
+                "handler": function (response){
+                    // Redirect to success page with payment ID
+                    fetch('/confirm_booking', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({upi_ref_no: response.razorpay_payment_id})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Booking confirmed:', data);
+                        window.location.href = '/bill/' + data.booking_id;
+                    })
+                    .catch(error => {
+                        console.error('Error confirming booking:', error);
+                    });
+                },
+                "prefill": {
+                    "name": "Customer Name",
+                    "email": "customer@example.com",
+                    "contact": "9876543210"
+                },
+                "theme": {
+                    "color": "#3399cc"
+                },
+                "modal": {
+                    "ondismiss": function(){
+                        // Redirect to failure page
+                        window.location.href = '/payment_failure';
+                    }
+                }
+            };
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+        }
+    </script>
+</body>
+</html>
