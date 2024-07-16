@@ -57,6 +57,9 @@
                         {% if booking.booking_status == 'Completed' %}
                         <span class="form-control">{{ booking.otp }}</span>
                         <td><span class="btn btn-success btn-block">Completed</span></td>
+                        {% elif booking.booking_status == 'Cancelled' %}
+                        <span class="form-control">{{ booking.otp }}</span>
+                        <td><span class="btn btn-cancelled btn-block">Cancelled</span></td>
                         {% else %}
                         <form method="POST" action="{{ url_for('update_booking_status') }}">
                             <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">

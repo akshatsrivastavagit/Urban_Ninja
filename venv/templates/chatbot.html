@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chatbot for Urban Company</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('https://wallpapercave.com/wp/wp2173991.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            backdrop-filter: blur(5px) grayscale(0.1);
+        }
+
+        .chatbot-container {
+            width: 400px;
+            height: 500px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px) saturate(150%);
+            -webkit-backdrop-filter: blur(10px) saturate(150%);
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chatbot-frame {
+            width: 90%;
+            height: 90%;
+            border: none;
+            border-radius: 10px;
+        }
+        .center-div {
+            width: 50vw;
+            height: 92vh;
+            border-radius: 15px;
+            padding: 5px;
+            box-sizing: border-box;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            backdrop-filter: blur(5px) grayscale(0.1); /* Glassmorphism effect */
+          }
+
+
+
+    </style>
+</head>
+
+<body>
+    <div class="chatbot-container">
+                <div>
+            </span></p>
+        <div class="absolute inset-4 ">
+            <div
+                class="center-div relative h-full w-full overflow-clip rounded-md border border-zinc-200 bg-white p-2 px-0 py-0">
+                <iframe style="border: none;" srcdoc="<body><script src='https://cdn.botpress.cloud/webchat/v0/inject.js'></script>
+            <script>
+              window.botpressWebChat.init({
+                  'composerPlaceholder': 'I know everything!!',
+                  'botConversationDescription': 'Urban Company',
+                  'botName': 'Acolyte Ai',
+                  'botId': 'e404fe6f-e592-4c3e-aef2-43241b5622b3',
+                  'hostUrl': 'https://cdn.botpress.cloud/webchat/v1',
+                  'messagingUrl': 'https://messaging.botpress.cloud',
+                  'clientId': 'e404fe6f-e592-4c3e-aef2-43241b5622b3',
+                  'enableConversationDeletion': true,
+                  'showPoweredBy': false,
+                  'className': 'webchatIframe',
+                  'containerWidth': '100%25',
+                  'layoutWidth': '100%25',
+                  'hideWidget': true,
+                  'showCloseButton': false,
+                  'disableAnimations': true,
+                  'closeOnEscape': false,
+                  'showConversationsButton': false,
+                  'enableTranscriptDownload': false,
+                  'stylesheet':'https://webchat-styler-css.botpress.app/prod/316c86e4-22a6-4723-a71b-842e78781aba/v40751/style.css'
+
+              });
+            window.botpressWebChat.onEvent(function () { window.botpressWebChat.sendEvent({ type: 'show' }) }, ['LIFECYCLE.LOADED']);
+            </script></body>" width="100%" height="100%"></iframe>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

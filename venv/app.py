@@ -1,6 +1,7 @@
 from flask import url_for, session,redirect
 from authlib.integrations.flask_client import OAuth
 from flask import Flask, render_template,request, jsonify,session,flash
+from collections import OrderedDict
 import mysql.connector
 import json,math
 import datetime
@@ -18,7 +19,7 @@ mysql_config = {
 }
 
 
-razorpay_client = razorpay.Client(auth=("rzp_test_4uhlcB7rKgemAg", "NGJdVvsYVBk8OfJQW3jPvXSw"))
+razorpay_client = razorpay.Client(auth=("rzp_live_43e1pUrpHcn2bx", "RjM9HVzuS0xJIkQpvpdNELkx"))
 
 @app.route('/create_order', methods=['POST'])
 def create_order():
@@ -249,6 +250,7 @@ def add_review():
     
     return redirect(url_for('show_profile'))
 
+
 @app.route('/cancel_booking', methods=['POST'])
 def cancel_booking():
     booking_id = request.form['booking_id']
@@ -260,11 +262,25 @@ def cancel_booking():
             "UPDATE user_bookings SET booking_status='Cancelled' WHERE booking_id=%s",
             (booking_id,)
         )
-        cursor.execute("select amount from  payments_table p Join user_bookings ub on p.UPI_Ref_No = ub.UPI_Ref_No WHERE ub.booking_id = %s",(booking_id,))
-        amount=cursor.fetchone()[0]
-        cursor.execute("select credits from users_table where user_email = %s",(user_email,))
-        cred=cursor.fetchone()[0]
-        total=cred+amount
+        cursor.execute("select amount from payments_table p Join user_bookings ub on p.UPI_Ref_No = ub.UPI_Ref_No WHERE ub.booking_id = %s", (booking_id,))
+        amount_result = cursor.fetchone()
+        if amount_result:
+            amount = amount_result[0]
+        cursor.fetchall()
+
+        cursor.execute("delete from technician_booking_table where booking_id = %s", (booking_id,))
+        print("No error")
+        print("success in deletion from technician table")
+
+        cursor.execute("select credits from users_table where user_email = %s", (user_email,))
+        cred_result = cursor.fetchone()
+        if cred_result:
+            cred = cred_result[0]
+
+        if(cred is not None):
+            total=cred+amount
+        else:
+            total=amount
         cursor.execute("UPDATE users_table SET credits = %s WHERE user_email = %s",(total,user_email))
         conn.commit()
         flash('Booking cancelled successfully!', 'success')
@@ -273,7 +289,7 @@ def cancel_booking():
     finally:
         cursor.close()
         conn.close()
-    
+
     return redirect(url_for('show_profile'))
 
 @app.route('/profile')
@@ -350,8 +366,10 @@ def get_user_profile(user_email):
     finally:
         cursor.close()
         conn.close()
-
-    return profile
+    sorted_profile = OrderedDict(
+        sorted(profile.items(), key=lambda item: item[1]['booking_date_time'], reverse=True)
+    )
+    return sorted_profile
 
 
 @app.route('/save_cart/<user_email>/<sc_id>', methods=['POST'])
@@ -359,21 +377,37 @@ def save_cart(user_email, sc_id):
     if 'user' not in session:
         return jsonify({"error": "User not logged in"}), 401
 
-    data = request.json
-    services = data['services']
     try:
+        data = request.json
+        services = data['services']
+
         conn = mysql.connector.connect(**mysql_config)
         cursor = conn.cursor(dictionary=True)
+
+        # Fetch existing service IDs in the user's cart
+        cursor.execute("SELECT service_id FROM user_cart_table WHERE user_email = %s", (user_email,))
+        existing_services = cursor.fetchall()
+
+        s_id_list = [service['service_id'] for service in existing_services]
+
         for service_id, service_data in services.items():
-            cursor.execute(
-                'INSERT INTO user_cart_table (user_email, sc_id, service_id, quantity) VALUES (%s, %s, %s, %s)',
-                (user_email, sc_id, service_id, service_data['quantity'])
-            )
+            if int(service_id) in s_id_list:
+                # Service already exists in cart, update quantity
+                cursor.execute("UPDATE user_cart_table SET quantity = quantity + %s WHERE service_id = %s AND user_email = %s",
+                               (service_data['quantity'], service_id, user_email))
+            else:
+                # Service does not exist in cart, insert new record
+                cursor.execute("INSERT INTO user_cart_table (user_email, sc_id, service_id, quantity) VALUES (%s, %s, %s, %s)",
+                               (user_email, sc_id, service_id, service_data['quantity']))
+
         conn.commit()
         cursor.close()
+        conn.close()
+
         return jsonify({"message": "Cart saved successfully"}), 200
-    except Exception as e:
-        print("Error saving cart:", e)
+
+    except mysql.connector.Error as e:
+        print("MySQL Error saving cart:", e)
         return jsonify({"error": "Error saving cart"}), 500
 
 
@@ -428,11 +462,35 @@ def remove_service():
     service_id = data['service_id']
     user = session.get('user')
 
+    if not user:
+        return jsonify({"error": "User not logged in"}), 401
+
     try:
         conn = mysql.connector.connect(**mysql_config)
-        cursor = conn.cursor()
-        
-        cursor.execute("DELETE FROM user_cart_table WHERE user_email = %s AND service_id = %s", (user['email'], service_id))
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch the current quantity of the service
+        cursor.execute("SELECT quantity FROM user_cart_table WHERE user_email = %s AND service_id = %s", (user['email'], service_id))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({"message": "Service not found in cart"}), 404
+
+        current_quantity = result['quantity']
+
+        if current_quantity > 1:
+            # Update the quantity and price if the quantity is greater than one
+            cursor.execute(
+                "UPDATE user_cart_table SET quantity = quantity - 1 WHERE user_email = %s AND service_id = %s",
+                (user['email'], service_id)
+            )
+        else:
+            # Delete the row if the quantity is one
+            cursor.execute(
+                "DELETE FROM user_cart_table WHERE user_email = %s AND service_id = %s",
+                (user['email'], service_id)
+            )
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -575,9 +633,10 @@ def technician_portal():
 
     technician_id = session['technician_id']
     print("TECHNICIAN ENTERED IN TECHNICIAN PORTAL:",technician_id)
-    conn = mysql.connector.connect(**mysql_config)
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute('''
+    try:
+        conn = mysql.connector.connect(**mysql_config)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
         SELECT b.*,ub.*, t.tech_name, t.tech_email
 FROM technician_booking_table b
 JOIN user_bookings ub ON ub.booking_id = b.booking_id
@@ -585,10 +644,13 @@ JOIN technician_table t ON b.tech_id = t.tech_id
 WHERE b.tech_id = %s;
 
     ''', (technician_id,))
-    bookings = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return render_template('technician_portal.html', bookings=bookings)
+        bookings = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return render_template('technician_portal.html', bookings=bookings)
+    except:
+        print("You have no bookings")
+        return "VOILA you have no bookings"
 
 # Update booking status route
 @app.route('/update_booking_status', methods=['POST'])
@@ -1113,21 +1175,22 @@ def get_selected_services(user_email, sc_id):
         cursor.execute("SELECT credits FROM users_table WHERE user_email = %s", (user_email,))
         user_details = cursor.fetchone()
         user_credits = user_details['credits'] if user_details else 0
-
         if user_credits > 0:
             if user_credits >= discounted_total:
                 credits_used = discounted_total
                 final_amount = 0
             else:
+
                 credits_used = user_credits
                 final_amount = discounted_total - user_credits
 
             # Update user credits in the users_table
-            # cursor.execute("UPDATE users_table SET credits = credits - %s WHERE user_email = %s", (credits_used, user_email))
+            cursor.execute("UPDATE users_table SET credits = credits - %s WHERE user_email = %s", (credits_used, user_email))
             conn.commit()
         else:
             credits_used = 0
             final_amount = discounted_total
+            conn.commit()
 
         session["selected_services"]['credits_used'] = credits_used
         session["selected_services"]['final_amount'] = final_amount
@@ -1300,7 +1363,7 @@ def bill(booking_id):
 
 @app.route('/chatbot')
 def chatbot():
-    return redirect('https://siddharthch7.github.io/Empty/')
+    return render_template('chatbot.html')
 
 
 
