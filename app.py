@@ -453,9 +453,6 @@ def view_cart():
 
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 @app.route('/remove_service', methods=['POST'])
 def remove_service():
     data = request.json
@@ -532,8 +529,8 @@ def proceed_to_booking():
     return jsonify({"message": "Proceeding to booking for sc_id " + str(sc_id)})
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -605,8 +602,8 @@ def company_logout():
     session.pop('authenticated', None)
     return redirect(url_for('home'))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 @app.route('/technician_login', methods=['GET', 'POST'])
 def technician_login():
@@ -689,8 +686,8 @@ def technician_logout():
     session.pop('technician_id', None)
     return redirect(url_for('technician_login'))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 @app.route('/get_package_details')
 def get_package_details():
@@ -849,8 +846,8 @@ def distribution_of_amount():
     cursor.execute("SELECT b.booking_id, b.user_email, b.tech_id, p.amount FROM user_bookings b JOIN payments_table p ON b.UPI_Ref_No = p.UPI_Ref_no")
     bookings = cursor.fetchall()
     return render_template('distribution_of_amt.html', bookings=bookings)
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 
 cityname=""
@@ -1001,8 +998,8 @@ def verify_payment_route(upiref):
     amount = session["selected_services"]['final_amount']
     payment_validity = verify_payment(upiref, amount)
     session["selected_services"]['payment_validity'] = payment_validity
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 # @app.route('/availability/<int:sc_id>/<int:duration>', methods=['GET'])
 
 
@@ -1408,3 +1405,6 @@ def find_technician_cities():
             flash(f'Error fetching technician cities: {e}')
 
     return render_template('find_technician_cities.html', cities=cities)
+
+if __name__ == '__main__':
+    app.run(debug=True)

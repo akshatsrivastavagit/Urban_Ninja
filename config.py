@@ -1,2 +1,2 @@
-GOOGLE_CLIENT_ID = '428384074891-e2rm4njobiiddk8r7idg33e5lhtvdpqi.apps.googleusercontent.com'
-GOOGLE_CLIENT_SECRET = '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'
+GOOGLE_CLIENT_ID = '987738038902-antr5trt3iq23ofv05j6hk2n1tss4ft1.apps.googleusercontent.com'
+GOOGLE_CLIENT_SECRET = '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'
