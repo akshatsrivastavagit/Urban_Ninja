@@ -1,4 +1,4 @@
-![Screenshot 2025-06-03 033019](https://github.com/user-attachments/assets/e57606e1-c42a-4d2d-8aef-f0302efd4d8f)![Screenshot 2025-06-03 032836](https://github.com/user-attachments/assets/12d076d8-31cd-4aa7-bd9c-d82a3a22681d)# 🛠️ UrbanClap Clone – Home Service Booking Web App
+# 🛠️ UrbanClap Clone – Home Service Booking Web App
 
 This is a full-stack clone of **UrbanClap**, offering a multi-role platform where users can book home services, technicians manage assignments, and admins control operations. It includes detailed workflows, real-time booking, payment gateway integration, dashboards, and user feedback systems.
 
